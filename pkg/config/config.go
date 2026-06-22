@@ -6,24 +6,13 @@
 package config
 
 import (
-	"github.com/saas-zero/saas-zero-common/config"
-	"github.com/spf13/viper"
+	"github.com/zeromicro/go-zero/core/conf"
 )
 
-func LoadConfig() (config.AppConfig, error) {
-	var config config.AppConfig
+func LoadConfig(path string, v interface{}) error {
+	return conf.LoadConfig(path, v)
+}
 
-	viper.SetConfigName("config")
-	//viper.SetConfigName("demo")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./config")
-	//viper.AutomaticEnv() //将环境变量与配置绑定
-	if err := viper.ReadInConfig(); err != nil {
-		return config, err
-	}
-
-	if err := viper.Unmarshal(&config); err != nil {
-		return config, err
-	}
-	return config, nil
+func MustLoadConfig(path string, v interface{}) {
+	conf.MustLoad(path, v)
 }

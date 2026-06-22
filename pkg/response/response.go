@@ -7,17 +7,21 @@ package response
 
 import (
 	"net/http"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// Response 定义统一的API响应结构
 type Response struct {
-	Code    int         `json:"code"`           // 状态码
-	Message string      `json:"message"`        // 响应消息
-	Data    interface{} `json:"data,omitempty"` // 响应数据
-	Success bool        `json:"success"`        // 是否成功
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+	Success bool        `json:"success"`
 }
 
-// Success 返回成功的响应
+func (r *Response) Error() string {
+	return r.Message
+}
+
 func Success(data interface{}) *Response {
 	return &Response{
 		Code:    http.StatusOK,
@@ -27,7 +31,6 @@ func Success(data interface{}) *Response {
 	}
 }
 
-// Error 返回错误的响应
 func Error(code int, message string) *Response {
 	return &Response{
 		Code:    code,
@@ -36,18 +39,16 @@ func Error(code int, message string) *Response {
 	}
 }
 
-// PageResponse 分页响应结构
 type PageResponse struct {
-	List      interface{} `json:"list"`      // 数据列表
-	Page      int         `json:"page"`      // 当前页码
-	PageSize  int         `json:"pageSize"`  // 每页数量
-	Total     int64       `json:"total"`     // 总数
-	TotalPage int         `json:"totalPage"` // 总页数
+	List      interface{} `json:"list"`
+	Page      int         `json:"page"`
+	PageSize  int         `json:"pageSize"`
+	Total     int64       `json:"total"`
+	TotalPage int         `json:"totalPage"`
 }
 
-// Page 返回分页响应
 func Page(list interface{}, page, pageSize int, total int64) *Response {
-	totalPage := int(total+int64(pageSize)-1) / pageSize // 向上取整计算总页数
+	totalPage := int(total+int64(pageSize)-1) / pageSize
 
 	pageResp := &PageResponse{
 		List:      list,
@@ -65,7 +66,18 @@ func Page(list interface{}, page, pageSize int, total int64) *Response {
 	}
 }
 
-// ToRPCResponse 转换为RPC响应格式
+func JSON(w http.ResponseWriter, code int, data interface{}) {
+	httpx.OkJson(w, data)
+}
+
+func SuccessJson(w http.ResponseWriter, data interface{}) {
+	httpx.OkJson(w, Success(data))
+}
+
+func ErrorJson(w http.ResponseWriter, code int, message string) {
+	httpx.Error(w, Error(code, message))
+}
+
 func (r *Response) ToRPCResponse() *RPCResponse {
 	return &RPCResponse{
 		Code:    int32(r.Code),
@@ -74,18 +86,16 @@ func (r *Response) ToRPCResponse() *RPCResponse {
 	}
 }
 
-// RPCResponse 定义RPC通用响应结构
-type RPCResponse struct {
-	Code    int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code"`
-	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message"`
-	Success bool   `protobuf:"varint,3,opt,name=success,proto3" json:"success"`
-}
-
-// NewRPCResponse 创建RPC响应
 func NewRPCResponse(code int32, message string, success bool) *RPCResponse {
 	return &RPCResponse{
 		Code:    code,
 		Message: message,
 		Success: success,
 	}
+}
+
+type RPCResponse struct {
+	Code    int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code"`
+	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message"`
+	Success bool   `protobuf:"varint,3,opt,name=success,proto3" json:"success"`
 }

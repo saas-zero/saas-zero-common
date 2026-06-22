@@ -6,58 +6,74 @@
 package ryjwt
 
 import (
-	"fmt"
-	"github.com/golang-jwt/jwt/v5"
+	"errors"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-const key = "KpFTpfZurEz56VIq0Qbz"
-
-func Sign(k, v string, exp int64) (string, error) {
-	if exp == 0 {
-		exp = 72
-	}
-
-	// 定义签名密钥
-	signingKey := []byte(key)
-	// 创建一个 claims
-	claims := jwt.MapClaims{
-		k:     v,
-		"exp": time.Now().Add(time.Duration(exp) * time.Hour).Unix(), // 设置过期时间
-	}
-
-	// 创建一个令牌对象，头部默认类型为 HS256
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// 使用密钥签名令牌
-	tokenStr, err := token.SignedString(signingKey)
-
-	//ryredis.Redis.Set(tokenStr, true, time.Duration(exp)*time.Hour)
-	return tokenStr, err
+type TokenConf struct {
+	AccessSecret  string
+	AccessExpire  int64
+	RefreshExpire int64
 }
 
-func Valid(k, tokenStr string) (string, error) {
-	// 定义签名密钥，需要与生成Token时使用的密钥一致
-	signingKey := []byte(key)
+func Sign(conf *TokenConf, k, v string, exp int64) (string, error) {
+	if exp == 0 {
+		exp = conf.AccessExpire
+	}
 
-	// 解析token
+	claims := jwt.MapClaims{
+		k:     v,
+		"exp": time.Now().Add(time.Duration(exp) * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(conf.AccessSecret))
+}
+
+func Valid(conf *TokenConf, k, tokenStr string) (string, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		// 检查签名方法是否正确
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, errors.New("unexpected signing method")
 		}
-		return signingKey, nil
+		return []byte(conf.AccessSecret), nil
 	})
 	if err != nil {
 		return "", err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		//v, err := ryredis.Redis.Get(tokenStr)
-		//if err != nil || v == "" {
-		//	return "", fmt.Errorf("token失效")
-		//}
+		val, exists := claims[k]
+		if !exists {
+			return "", errors.New("key " + k + " not found in token")
+		}
 
-		return claims[k].(string), nil
+		strVal, ok := val.(string)
+		if !ok {
+			return "", errors.New("key " + k + " is not a string")
+		}
+
+		return strVal, nil
 	}
-	return "", fmt.Errorf("token失效")
+
+	return "", errors.New("token invalid")
+}
+
+func RefreshToken(conf *TokenConf, userId string) (string, error) {
+	return Sign(conf, "userId", userId, conf.AccessExpire)
+}
+
+func GenerateTokens(conf *TokenConf, userId string) (accessToken, refreshToken string, err error) {
+	accessToken, err = Sign(conf, "userId", userId, conf.AccessExpire)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err = Sign(conf, "userId", userId, conf.RefreshExpire)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }
