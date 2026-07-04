@@ -1,13 +1,14 @@
 package mixins
 
 import (
+	"context"
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
 )
 
-// DeletedMixin 定义所有表的通用基础字段
-// 适用于 PostgreSQL 数据库
 type DeletedMixin struct {
 	ent.Mixin
 }
@@ -44,7 +45,27 @@ func (DeletedMixin) Indexes() []ent.Index {
 
 // Hooks of the DeletedMixin.
 func (DeletedMixin) Hooks() []ent.Hook {
-	return nil
+	return []ent.Hook{
+		func(next ent.Mutator) ent.Mutator {
+			return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+				if !m.Op().Is(ent.OpUpdate) && !m.Op().Is(ent.OpUpdateOne) {
+					return next.Mutate(ctx, m)
+				}
+				if _, exists := m.Field("deleted_at"); !exists {
+					return next.Mutate(ctx, m)
+				}
+				now := time.Now()
+				m.SetField("deleted_at", now)
+				if uid := GetCurrentUserId(ctx); uid > 0 {
+					m.SetField("deleted_id", uid)
+				}
+				if uname := GetCurrentUserName(ctx); uname != "" {
+					m.SetField("deleted_by", uname)
+				}
+				return next.Mutate(ctx, m)
+			})
+		},
+	}
 }
 
 // Interceptors of the DeletedMixin.
