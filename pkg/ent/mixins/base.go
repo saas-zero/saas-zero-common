@@ -1,9 +1,12 @@
 package mixins
 
 import (
+	"context"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
+	"github.com/saas-zero/saas-zero-common/pkg/snowflake"
 )
 
 // BaseMixin 定义所有表的通用基础字段
@@ -33,9 +36,25 @@ func (BaseMixin) Indexes() []ent.Index {
 	return nil
 }
 
+type idSettable interface {
+	SetID(int64)
+}
+
 // Hooks of the BaseMixin.
 func (BaseMixin) Hooks() []ent.Hook {
-	return nil
+	return []ent.Hook{
+		func(next ent.Mutator) ent.Mutator {
+			return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+				if !m.Op().Is(ent.OpCreate) {
+					return next.Mutate(ctx, m)
+				}
+				if s, ok := m.(idSettable); ok {
+					s.SetID(snowflake.NextID())
+				}
+				return next.Mutate(ctx, m)
+			})
+		},
+	}
 }
 
 // Interceptors of the BaseMixin.
