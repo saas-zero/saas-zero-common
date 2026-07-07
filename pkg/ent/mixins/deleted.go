@@ -2,6 +2,7 @@ package mixins
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"entgo.io/ent"
@@ -59,7 +60,13 @@ func (DeletedMixin) Hooks() []ent.Hook {
 				if uid := GetCurrentUserId(ctx); uid > 0 {
 					m.SetField("deleted_id", uid)
 				}
-				if uname := GetCurrentUserName(ctx); uname != "" {
+				uname := GetCurrentUserName(ctx)
+				if uname == "" {
+					if uid := GetCurrentUserId(ctx); uid > 0 {
+						uname = strconv.FormatInt(uid, 10)
+					}
+				}
+				if uname != "" {
 					m.SetField("deleted_by", uname)
 				}
 				return next.Mutate(ctx, m)

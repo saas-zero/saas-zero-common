@@ -2,23 +2,29 @@ package jwt
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"time"
 
 	gojwt "github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {
-	UserId    int64    `json:"userId"`
-	TenantId  int64    `json:"tenantId"`
-	UserName  string   `json:"userName"`
-	RoleCodes []string `json:"roleCodes"`
+	UserId       int64  `json:"userId"`
+	TenantId     int64  `json:"tenantId"`
+	UserName     string `json:"userName"`
+	TokenVersion int64  `json:"tokenVersion"`
 	gojwt.RegisteredClaims
 }
 
 func Sign(secret string, claims *Claims, expire time.Duration) (string, error) {
+	now := time.Now()
+	if claims.ID == "" {
+		claims.ID = uuid.New().String()
+	}
 	claims.RegisteredClaims = gojwt.RegisteredClaims{
-		ExpiresAt: gojwt.NewNumericDate(time.Now().Add(expire)),
-		IssuedAt:  gojwt.NewNumericDate(time.Now()),
+		ExpiresAt: gojwt.NewNumericDate(now.Add(expire)),
+		IssuedAt:  gojwt.NewNumericDate(now),
+		ID:        claims.ID,
 	}
 	token := gojwt.NewWithClaims(gojwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))

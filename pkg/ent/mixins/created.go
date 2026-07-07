@@ -2,6 +2,7 @@ package mixins
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"entgo.io/ent"
@@ -64,7 +65,13 @@ func (CreatedMixin) Hooks() []ent.Hook {
 				if uid := GetCurrentUserId(ctx); uid > 0 {
 					m.SetField("created_id", uid)
 				}
-				if uname := GetCurrentUserName(ctx); uname != "" {
+				uname := GetCurrentUserName(ctx)
+				if uname == "" {
+					if uid := GetCurrentUserId(ctx); uid > 0 {
+						uname = strconv.FormatInt(uid, 10)
+					}
+				}
+				if uname != "" {
 					m.SetField("created_by", uname)
 				}
 				return next.Mutate(ctx, m)
