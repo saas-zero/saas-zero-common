@@ -27,13 +27,13 @@ var (
 	InvalidParam  = New(400, "参数错误")
 	Forbidden     = New(403, "无权限")
 
-	// 认证 1xx
-	TenantNotFound   = New(1, "租户不存在")
-	UserNotFound     = New(1, "用户不存在")
-	WrongPassword    = New(3, "密码错误")
-	TokenExpired     = New(3, "token无效或已过期")
-	OldPasswordWrong = New(2, "旧密码错误")
-	UserIdFormatErr  = New(4, "用户ID格式错误")
+	// 认证 1001+
+	TenantNotFound   = New(1001, "租户不存在")
+	UserNotFound     = New(1002, "用户不存在")
+	WrongPassword    = New(1003, "密码错误")
+	TokenExpired     = New(1004, "token无效或已过期")
+	OldPasswordWrong = New(1005, "旧密码错误")
+	UserIdFormatErr  = New(1006, "用户ID格式错误")
 
 	// HTTP 状态码
 	Unauthorized         = New(401, "未授权")

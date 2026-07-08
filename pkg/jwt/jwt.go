@@ -9,10 +9,11 @@ import (
 )
 
 type Claims struct {
-	UserId       int64  `json:"userId"`
-	TenantId     int64  `json:"tenantId"`
-	UserName     string `json:"userName"`
-	TokenVersion int64  `json:"tokenVersion"`
+	UserId       int64    `json:"userId"`
+	TenantId     int64    `json:"tenantId"`
+	UserName     string   `json:"userName"`
+	RoleCodes    []string `json:"roleCodes"`
+	TokenVersion int64    `json:"tokenVersion"`
 	gojwt.RegisteredClaims
 }
 
