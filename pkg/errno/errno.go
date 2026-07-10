@@ -34,6 +34,7 @@ var (
 	TokenExpired     = New(1004, "token无效或已过期")
 	OldPasswordWrong = New(1005, "旧密码错误")
 	UserIdFormatErr  = New(1006, "用户ID格式错误")
+	AccountLocked    = New(1007, "账号已锁定，请稍后再试")
 
 	// HTTP 状态码
 	Unauthorized         = New(401, "未授权")
