@@ -22,7 +22,7 @@ func (e *Errno) JSON() string {
 
 var (
 	// 通用
-	Success       = New(0, "success")
+	Success       = New(200, "success")
 	InternalError = New(500, "内部服务器错误")
 	InvalidParam  = New(400, "参数错误")
 	Forbidden     = New(403, "无权限")

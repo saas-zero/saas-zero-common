@@ -49,8 +49,10 @@ func (a *PgAdapter) LoadPolicy(m model.Model) error {
 		if err := rows.Scan(&ptype, &v0, &v1, &v2, &v3, &v4, &v5); err != nil {
 			return err
 		}
-		line := fmt.Sprintf("%s, %s, %s, %s, %s, %s, %s", ptype, v0, v1, v2, v3, v4, v5)
-		persist.LoadPolicyLine(line, m)
+		line := fmt.Sprintf("%s, %s, %s, %s, %s, %s", ptype, v0, v1, v2, v3, v4)
+		if err := persist.LoadPolicyLine(line, m); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -60,25 +62,25 @@ func (a *PgAdapter) SavePolicy(m model.Model) error {
 }
 
 func (a *PgAdapter) AddPolicy(sec, ptype string, rule []string) error {
-	cols := make([]string, 7)
+	cols := make([]string, 6)
 	cols[0] = ptype
-	for i := 0; i < 6 && i < len(rule); i++ {
+	for i := 0; i < 5 && i < len(rule); i++ {
 		cols[i+1] = rule[i]
 	}
-	q := fmt.Sprintf("INSERT INTO %s (ptype, v0, v1, v2, v3, v4, v5) VALUES ($1,$2,$3,$4,$5,$6,$7)", a.tableName)
-	args := []interface{}{cols[0], cols[1], cols[2], cols[3], cols[4], cols[5], cols[6]}
+	q := fmt.Sprintf("INSERT INTO %s (ptype, v0, v1, v2, v3, v4) VALUES ($1,$2,$3,$4,$5,$6)", a.tableName)
+	args := []interface{}{cols[0], cols[1], cols[2], cols[3], cols[4], cols[5]}
 	_, err := a.db.Exec(q, args...)
 	return err
 }
 
 func (a *PgAdapter) RemovePolicy(sec, ptype string, rule []string) error {
-	cols := make([]string, 7)
+	cols := make([]string, 6)
 	cols[0] = ptype
-	for i := 0; i < 6 && i < len(rule); i++ {
+	for i := 0; i < 5 && i < len(rule); i++ {
 		cols[i+1] = rule[i]
 	}
-	q := fmt.Sprintf("DELETE FROM %s WHERE ptype=$1 AND v0=$2 AND v1=$3 AND v2=$4 AND v3=$5 AND v4=$6 AND v5=$7", a.tableName)
-	args := []interface{}{cols[0], cols[1], cols[2], cols[3], cols[4], cols[5], cols[6]}
+	q := fmt.Sprintf("DELETE FROM %s WHERE ptype=$1 AND v0=$2 AND v1=$3 AND v2=$4 AND v3=$5 AND v4=$6", a.tableName)
+	args := []interface{}{cols[0], cols[1], cols[2], cols[3], cols[4], cols[5]}
 	_, err := a.db.Exec(q, args...)
 	return err
 }
