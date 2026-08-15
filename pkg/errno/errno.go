@@ -47,7 +47,8 @@ var (
 	ForbiddenOperation   = New(403, "forbidden")
 
 	// 业务校验 4xx
-	HasSubDept   = New(400, "该部门下存在子部门，无法删除")
-	HasSubMenu   = New(400, "该菜单下存在子菜单，无法删除")
-	PackageInUse = New(400, "该套餐已被租户使用，无法删除")
+	HasSubDept     = New(400, "该部门下存在子部门，无法删除")
+	HasSubMenu     = New(400, "该菜单下存在子菜单，无法删除")
+	PackageInUse   = New(400, "该套餐已被租户使用，无法删除")
+	UsernameExists = New(400, "用户名已存在")
 )
