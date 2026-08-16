@@ -1,6 +1,10 @@
 package errno
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"net/http"
+)
 
 type Errno struct {
 	Code int
@@ -20,6 +24,21 @@ func (e *Errno) JSON() string {
 	return fmt.Sprintf(`{"code":%d,"msg":"%s"}`, e.Code, e.Msg)
 }
 
+// ErrHandler 是统一的 HTTP 错误处理器（配合 httpx.SetErrorHandler 使用）。
+// 所有响应 code 均取自本包错误码：
+//   - errno.Errno 错误：使用其自身 code/msg
+//   - 其他意外错误（DB/RPC/参数解析等）：统一映射为 InternalError
+func ErrHandler(err error) (int, any) {
+	var e *Errno
+	if errors.As(err, &e) {
+		return e.Code, map[string]any{"code": e.Code, "msg": e.Msg}
+	}
+	return http.StatusInternalServerError, map[string]any{
+		"code": InternalError.Code,
+		"msg":  InternalError.Msg,
+	}
+}
+
 var (
 	// 通用
 	Success       = New(200, "success")
@@ -35,6 +54,7 @@ var (
 	OldPasswordWrong = New(1005, "旧密码错误")
 	UserIdFormatErr  = New(1006, "用户ID格式错误")
 	AccountLocked    = New(1007, "账号已锁定，请稍后再试")
+	AccountDisabled  = New(1008, "账号已被禁用")
 
 	// HTTP 状态码
 	Unauthorized         = New(401, "未授权")
