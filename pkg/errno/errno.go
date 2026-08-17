@@ -65,6 +65,7 @@ var (
 	TokenVersionMismatch = New(401, "token version mismatch, please re-login")
 	NoRoles              = New(403, "no roles")
 	ForbiddenOperation   = New(403, "forbidden")
+	AuthServiceUnavailable = New(500, "auth service unavailable, please try again later")
 
 	// 业务校验 4xx
 	HasSubDept     = New(400, "该部门下存在子部门，无法删除")
