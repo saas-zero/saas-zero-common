@@ -2,11 +2,16 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
 	gzredis "github.com/zeromicro/go-zero/core/stores/redis"
 )
+
+// ErrNotInitialized 表示 Redis 客户端未完成初始化（nil 指针防护）。
+// 生产代码在 serviceContext 已做 fail-closed，此错误仅在测试等场景出现。
+var ErrNotInitialized = errors.New("redis client not initialized")
 
 type Conf struct {
 	Host string
@@ -41,48 +46,84 @@ func NewClient(c Conf) (*Client, error) {
 }
 
 func (c *Client) Get(key string) (string, error) {
+	if c == nil {
+		return "", ErrNotInitialized
+	}
 	if c.gz != nil {
 		return c.gz.Get(key)
 	}
-	return c.gr.Get(context.Background(), key).Result()
+	if c.gr != nil {
+		return c.gr.Get(context.Background(), key).Result()
+	}
+	return "", ErrNotInitialized
 }
 
 func (c *Client) Setex(key, value string, seconds int) error {
+	if c == nil {
+		return ErrNotInitialized
+	}
 	if c.gz != nil {
 		return c.gz.Setex(key, value, seconds)
 	}
-	return c.gr.Set(context.Background(), key, value, time.Duration(seconds)*time.Second).Err()
+	if c.gr != nil {
+		return c.gr.Set(context.Background(), key, value, time.Duration(seconds)*time.Second).Err()
+	}
+	return ErrNotInitialized
 }
 
 func (c *Client) Exists(key string) (bool, error) {
+	if c == nil {
+		return false, ErrNotInitialized
+	}
 	if c.gz != nil {
 		return c.gz.Exists(key)
 	}
-	n, err := c.gr.Exists(context.Background(), key).Result()
-	if err != nil {
-		return false, err
+	if c.gr != nil {
+		n, err := c.gr.Exists(context.Background(), key).Result()
+		if err != nil {
+			return false, err
+		}
+		return n > 0, nil
 	}
-	return n > 0, nil
+	return false, ErrNotInitialized
 }
 
 func (c *Client) Incr(key string) (int64, error) {
+	if c == nil {
+		return 0, ErrNotInitialized
+	}
 	if c.gz != nil {
 		return c.gz.Incr(key)
 	}
-	return c.gr.Incr(context.Background(), key).Result()
+	if c.gr != nil {
+		return c.gr.Incr(context.Background(), key).Result()
+	}
+	return 0, ErrNotInitialized
 }
 
 func (c *Client) Del(key string) (int, error) {
+	if c == nil {
+		return 0, ErrNotInitialized
+	}
 	if c.gz != nil {
 		return c.gz.Del(key)
 	}
-	n, err := c.gr.Del(context.Background(), key).Result()
-	return int(n), err
+	if c.gr != nil {
+		n, err := c.gr.Del(context.Background(), key).Result()
+		return int(n), err
+	}
+	return 0, ErrNotInitialized
 }
 
 func (c *Client) Expire(key string, seconds int) error {
+	if c == nil {
+		return ErrNotInitialized
+	}
 	if c.gz != nil {
 		return c.gz.Expire(key, seconds)
 	}
-	return c.gr.Expire(context.Background(), key, time.Duration(seconds)*time.Second).Err()
+	if c.gr != nil {
+		return c.gr.Expire(context.Background(), key, time.Duration(seconds)*time.Second).Err()
+	}
+	return ErrNotInitialized
 }

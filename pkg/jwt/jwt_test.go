@@ -81,3 +81,46 @@ func TestParse_TokenNotExpired(t *testing.T) {
 	}
 	_ = parsed
 }
+
+// TestSignAndParse_RoleCodesAndTokenVersion 验证 roleCodes 与 tokenVersion
+// 往返无损（/oauth/refresh 重签与权限踢出依赖这两个字段）。
+func TestSignAndParse_RoleCodesAndTokenVersion(t *testing.T) {
+	claims := &Claims{
+		UserId:       1001,
+		TenantId:     2001,
+		UserName:     "testuser",
+		RoleCodes:    []string{"admin", "user"},
+		TokenVersion: 7,
+	}
+	token, err := Sign(testSecret, claims, time.Hour)
+	if err != nil {
+		t.Fatalf("Sign failed: %v", err)
+	}
+	parsed, err := Parse(token, testSecret)
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if parsed.TokenVersion != 7 {
+		t.Fatalf("expected TokenVersion=7, got %d", parsed.TokenVersion)
+	}
+	if len(parsed.RoleCodes) != 2 || parsed.RoleCodes[0] != "admin" || parsed.RoleCodes[1] != "user" {
+		t.Fatalf("expected roleCodes [admin user], got %v", parsed.RoleCodes)
+	}
+}
+
+// TestSignAndParse_RoleCodesEmpty 验证无角色时解析结果 len==0（nil 也安全，
+// 下游 casbinauth 通过 len==0 判为无权限，fail-closed）。
+func TestSignAndParse_RoleCodesEmpty(t *testing.T) {
+	claims := &Claims{UserId: 1, TenantId: 1, UserName: "noroles"}
+	token, err := Sign(testSecret, claims, time.Hour)
+	if err != nil {
+		t.Fatalf("Sign failed: %v", err)
+	}
+	parsed, err := Parse(token, testSecret)
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if len(parsed.RoleCodes) != 0 {
+		t.Fatalf("expected 0 role codes, got %d", len(parsed.RoleCodes))
+	}
+}
